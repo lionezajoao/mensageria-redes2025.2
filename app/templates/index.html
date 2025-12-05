@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat - {{ service_name }}</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f1f1f1;
+        }
+        .chat-container {
+            width: 600px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .header-title {
+            font-weight: bold;
+        }
+        .header-sub {
+            font-size: 0.9rem;
+            color: #555;
+        }
+        .header button {
+            padding: 8px 16px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .header button:hover {
+            background-color: #218838;
+        }
+        .chat-log {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .message {
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        .message.sent {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 3px;
+        }
+        .message.received {
+            background-color: #e9ecef;
+            color: black;
+            align-self: flex-start;
+            border-bottom-left-radius: 3px;
+        }
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #dee2e6;
+        }
+        .chat-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        .chat-input button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .chat-input button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="header">
+            <div>
+                <div class="header-title">Chat - {{ service_name }}</div>
+                <div class="header-sub" id="connection-info">
+                    Connecting...
+                </div>
+            </div>
+            <button onclick="connect()">Reconnect</button>
+        </div>
+        <div class="chat-log" id="chat-log">
+            <!-- Messages will be appended here -->
+        </div>
+        <div class="chat-input">
+            <input type="text" id="message-input" placeholder="Type a message..." disabled>
+            <button id="send-button" onclick="sendMessage()" disabled>Send</button>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        const clientId = Math.floor(Math.random() * 1000); // id do cliente (aba)
+        const serviceName = "{{ service_name }}"; // nome do serviço, vindo do backend
+
+        function connect() {
+            const host = window.location.host; // ex: localhost:8000 ou localhost:8001
+            const wsUrl = `ws://${host}/ws/${clientId}`;
+
+            // Fecha conexão anterior, se existir
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+                ws.close();
+            }
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function() {
+                document.getElementById('message-input').disabled = false;
+                document.getElementById('send-button').disabled = false;
+                setConnectionInfo(`Connected to ${wsUrl}`);
+            };
+
+            ws.onmessage = function(event) {
+                appendMessage(event.data, 'received');
+            };
+
+            ws.onerror = function(event) {
+                appendMessage('System: An error occurred during connection.', 'received');
+                console.error('WebSocket error:', event);
+                setConnectionInfo('Error on connection');
+            };
+
+            ws.onclose = function() {
+                document.getElementById('message-input').disabled = true;
+                document.getElementById('send-button').disabled = true;
+                appendMessage('System: Disconnected.', 'received');
+                setConnectionInfo('Disconnected');
+            };
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('message-input');
+            const messageText = messageInput.value.trim();
+
+            if (messageText === '' || !ws || ws.readyState !== WebSocket.OPEN) {
+                return;
+            }
+
+            ws.send(messageText);
+            appendMessage(`You: ${messageText}`, 'sent');
+            messageInput.value = '';
+        }
+
+        function appendMessage(text, type) {
+            const chatLog = document.getElementById('chat-log');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', type);
+            messageDiv.textContent = text;
+            chatLog.appendChild(messageDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function setConnectionInfo(text) {
+            document.getElementById('connection-info').textContent = text;
+        }
+
+        // Conecta automaticamente quando a página carrega
+        window.addEventListener('load', connect);
+
+        // Enter para enviar
+        document.getElementById('message-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
