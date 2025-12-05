@@ -10,6 +10,9 @@ uvicorn = "*"
 python-dotenv = "*"
 pymongo = "*"
 openpyxl = "*"
+httpx = "*"
+jinja2 = "*"
+websockets = "*"
 
 [dev-packages]
 

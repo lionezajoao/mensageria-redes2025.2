@@ -1,25 +1,25 @@
 services:
-  serviceA:
+  servicea:
     ports:
       - "8000:8000"
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-      - SERVICE_NAME=serviceA
-      - PEER_URL=http://serviceB:8000/relay
+      - SERVICE_NAME=Service A
+      - PEER_URL=http://serviceb:8000/relay
     networks:
       - default
 
-  serviceB:
+  serviceb:
     ports:
       - "8001:8000"
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-      - SERVICE_NAME=serviceB
-      - PEER_URL=http://serviceA:8000/relay
+      - SERVICE_NAME=Service B
+      - PEER_URL=http://servicea:8000/relay
     networks:
       - default
 
